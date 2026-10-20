@@ -14,23 +14,22 @@ class AuthController extends Controller
         $data = $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
-            'role'     => 'required|in:pemilik,kasir,karyawan_toko',
-        ], [
-            'username.required' => 'Username wajib diisi',
-            'password.required' => 'Password wajib diisi',
-            'role.required'     => 'Peran wajib dipilih',
-            'role.in'           => 'Peran tidak valid',
+            'role'     => 'required|in:pemilik,kasir,karyawan',
         ]);
 
         $user = User::where('username', $data['username'])->first();
 
-        if (!$user || !Hash::check($data['password'], $user->password) || $user->role !== $data['role']) {
-            return response()->json([
-                'message' => 'Username atau password salah, atau akun ini bukan akun ' . str_replace('_', ' ', $data['role']) . '.',
-            ], 401);
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            return response()->json(['message' => 'Username atau password salah'], 401);
         }
 
-        $token = $user->createToken('mobile')->plainTextToken;
+        if ($user->role !== $data['role']) {
+            return response()->json([
+                'message' => 'Akun ini bukan akun ' . $data['role'],
+            ], 403);
+        }
+
+        $token = $user->createToken('pmd-token')->plainTextToken;
 
         return response()->json([
             'message' => 'Login berhasil',
