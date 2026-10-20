@@ -1,0 +1,9 @@
+# Desain Figma Sprint 1
+
+Link: https://www.figma.com/design/EewQoUWeV4X6oAmXdfy0O3/Untitled?node-id=34-259&t=8otcMHPspofxFtLf-1
+
+Layar:
+- Login
+- Form tambah produk
+- Dashboard
+- Daftar dan edit produk
