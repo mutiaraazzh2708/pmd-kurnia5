@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/validators.dart';
 
 class FormTambahProdukScreen extends StatefulWidget {
   const FormTambahProdukScreen({super.key});
@@ -26,12 +27,14 @@ class _FormTambahProdukScreenState extends State<FormTambahProdukScreen> {
   }
 
   void _simpan() {
+    if (!_formKey.currentState!.validate()) return;
+
     final data = {
-      'nama': _namaCtrl.text,
-      'satuan_dasar': _satuanCtrl.text,
-      'harga_beli': _hargaBeliCtrl.text,
-      'harga_jual': _hargaJualCtrl.text,
-      'stok_awal': _stokAwalCtrl.text,
+      'nama': _namaCtrl.text.trim(),
+      'satuan_dasar': _satuanCtrl.text.trim(),
+      'harga_beli': _hargaBeliCtrl.text.trim(),
+      'harga_jual': _hargaJualCtrl.text.trim(),
+      'stok_awal': _stokAwalCtrl.text.trim(),
     };
     debugPrint('Data produk: $data');
     ScaffoldMessenger.of(context).showSnackBar(
@@ -55,6 +58,7 @@ class _FormTambahProdukScreenState extends State<FormTambahProdukScreen> {
                   labelText: 'Nama produk',
                   border: OutlineInputBorder(),
                 ),
+                validator: (v) => Validators.wajibDiisi(v, 'Nama produk'),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -63,6 +67,7 @@ class _FormTambahProdukScreenState extends State<FormTambahProdukScreen> {
                   labelText: 'Satuan dasar (kg, pcs, liter)',
                   border: OutlineInputBorder(),
                 ),
+                validator: (v) => Validators.wajibDiisi(v, 'Satuan'),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -73,6 +78,7 @@ class _FormTambahProdukScreenState extends State<FormTambahProdukScreen> {
                   prefixText: 'Rp ',
                   border: OutlineInputBorder(),
                 ),
+                validator: (v) => Validators.angkaTidakNegatif(v, 'Harga beli'),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -83,6 +89,7 @@ class _FormTambahProdukScreenState extends State<FormTambahProdukScreen> {
                   prefixText: 'Rp ',
                   border: OutlineInputBorder(),
                 ),
+                validator: (v) => Validators.angkaTidakNegatif(v, 'Harga jual'),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -92,6 +99,8 @@ class _FormTambahProdukScreenState extends State<FormTambahProdukScreen> {
                   labelText: 'Stok awal',
                   border: OutlineInputBorder(),
                 ),
+                validator: (v) =>
+                    Validators.bilanganBulatTidakNegatif(v, 'Stok awal'),
               ),
               const SizedBox(height: 24),
               SizedBox(
