@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
       title: 'PMD Kurnia 5',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.green, useMaterial3: true),
-        home: const LoginScreen(),
+        home: ProdukListScreen(),
     );
   }
 }
