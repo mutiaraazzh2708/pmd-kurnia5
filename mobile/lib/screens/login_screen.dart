@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../services/api_service.dart';
+import 'produk_list_screen.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -13,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   String? _role;
   bool _hidePassword = true;
+  bool _loading = false;
 
   static const _roles = ['pemilik', 'kasir', 'karyawan_toko'];
 
@@ -23,8 +27,25 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Diisi Shandi di issue #4: sambungkan ke POST /api/login
-  void onLogin(String username, String password, String role) {}
+  // Issue #4: sambungkan ke POST /api/login
+  Future<void> onLogin(String username, String password, String role) async {
+    setState(() => _loading = true);
+    try {
+      await ApiService.login(username.trim(), password, role);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ProdukListScreen()),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
@@ -91,7 +112,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   validator: (v) => v == null ? 'Pilih peran' : null,
                 ),
                 const SizedBox(height: 24),
-                FilledButton(onPressed: _submit, child: const Text('Masuk')),
+                FilledButton(
+                  onPressed: _loading ? null : _submit,
+                  child: _loading
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text('Masuk'),
+                ),
               ],
             ),
           ),
