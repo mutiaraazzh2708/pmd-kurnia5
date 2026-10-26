@@ -5,17 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Produk;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ProdukController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $produk = Produk::with('satuan')->orderBy('nama')->get();
+        $query = Produk::orderBy('nama');
 
-        return response()->json($produk);
+        if ($request->filled('cari')) {
+            $query->where('nama', 'like', '%' . $request->cari . '%');
+        }
+
+        return response()->json($query->get());
     }
-
     public function store(Request $request)
     {
         $data = $request->validate([
