@@ -209,3 +209,106 @@ Authorization: Bearer <TOKEN>
 | `pemilik1` | `password123` | `pemilik` | Lihat, Tambah, Edit, Hapus (Full) |
 | `kasir1` | `password123` | `kasir` | Hanya Lihat (`GET /api/produk`) |
 | `karyawan1` | `password123` | `karyawan_toko` | Hanya Lihat (`GET /api/produk`) |
+
+
+## 3. Autocomplete Produk (Kasir)
+
+### 3.1 Cari Produk
+* **Endpoint:** `GET /api/produk/autocomplete?q=<kata kunci>`
+* **Akses:** `kasir`, `pemilik`
+* **Query:** `q` wajib, minimal 2 huruf
+* **Response Sukses (200 OK):** maksimal 10 produk, produk terhapus tidak tampil
+```json
+[
+  {
+    "id": 1,
+    "nama": "Gula Pasir 1 kg",
+    "satuan": "Kg",
+    "harga_jual": "16500.00",
+    "stok": 120
+  }
+]
+```
+* **Response Gagal:**
+  * `422`: `q` kosong atau kurang dari 2 huruf
+  * `403`: role `karyawan_toko`
+  * `401`: tanpa token
+
+---
+
+## 4. Transaksi
+
+Semua endpoint memerlukan `Authorization: Bearer <TOKEN>`.
+
+### 4.1 Simpan Transaksi
+* **Endpoint:** `POST /api/transaksi`
+* **Akses:** `kasir`, `pemilik`
+* **Request Body:**
+```json
+{
+  "tipe_pembeli": "reseller",
+  "metode_bayar": "tunai",
+  "items": [
+    { "produk_id": 1, "jumlah": 2 },
+    { "produk_id": 3, "jumlah": 1 }
+  ]
+}
+```
+| Field | Aturan |
+| :--- | :--- |
+| `tipe_pembeli` | wajib, `umum` atau `reseller` |
+| `metode_bayar` | wajib, `tunai`, `transfer`, atau `qris` |
+| `items` | wajib, minimal 1 item |
+| `items.*.produk_id` | wajib, harus ada, tidak boleh dobel |
+| `items.*.jumlah` | wajib, bilangan bulat, minimal 1 |
+
+> Total dan harga dihitung server dari `harga_jual` produk. Field `harga` atau `total` dari app diabaikan. Stok produk berkurang otomatis. Jika satu item gagal, seluruh transaksi dibatalkan.
+
+* **Response Sukses (201 Created):**
+```json
+{
+  "message": "Transaksi berhasil disimpan",
+  "transaksi": {
+    "id": 10,
+    "user_id": 2,
+    "tipe_pembeli": "reseller",
+    "metode_bayar": "tunai",
+    "total": "48000.00",
+    "created_at": "2026-10-27 15:40:00",
+    "updated_at": "2026-10-27 15:40:00"
+  },
+  "detail": [
+    {
+      "id": 21,
+      "transaksi_id": 10,
+      "produk_id": 1,
+      "jumlah": 2,
+      "harga": "16500.00",
+      "subtotal": "33000.00"
+    }
+  ]
+}
+```
+* **Response Validasi Gagal (422):**
+```json
+{
+  "message": "Stok tidak cukup (tersisa 3)",
+  "errors": {
+    "items.0.jumlah": ["Stok tidak cukup (tersisa 3)"]
+  }
+}
+```
+Contoh pesan lain: `Keranjang tidak boleh kosong`, `Jumlah harus lebih dari 0`, `Metode bayar wajib dipilih`, `Produk tidak boleh dobel di keranjang`, `Produk tidak tersedia`. Kunci `errors` memakai posisi item (`items.0.jumlah`) supaya app bisa menandai baris yang salah.
+* **Response Akses Ditolak:** `403` untuk `karyawan_toko`, `401` tanpa token.
+
+### 4.2 Riwayat Transaksi
+* **Endpoint:** `GET /api/transaksi`
+* **Akses:** semua role yang login
+* **Query opsional:** `metode_bayar`, `tanggal` (format `YYYY-MM-DD`)
+* **Response (200 OK):** daftar transaksi terbaru lebih dulu, memuat `kasir` (`id`, `name`, `username`)
+
+### 4.3 Detail Transaksi
+* **Endpoint:** `GET /api/transaksi/{id}`
+* **Akses:** semua role yang login
+* **Response (200 OK):** transaksi lengkap dengan `kasir` dan `detail` (tiap baris memuat `produk` berisi `id` dan `nama`)
+* **Response Gagal:** `404` jika id tidak ada
