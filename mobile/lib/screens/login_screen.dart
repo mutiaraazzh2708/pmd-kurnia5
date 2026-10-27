@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import 'kasir/kasir_screen.dart';
 import 'produk_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -35,7 +36,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const ProdukListScreen()),
+        MaterialPageRoute(
+          builder: (_) =>
+          role == 'kasir' ? const KasirScreen() : const ProdukListScreen(),
+        ),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
