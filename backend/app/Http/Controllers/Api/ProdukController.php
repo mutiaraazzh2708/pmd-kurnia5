@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Produk;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProdukController extends Controller
 {
@@ -56,4 +57,25 @@ class ProdukController extends Controller
 
         return response()->json(['message' => 'Produk berhasil dihapus']);
     }
+
+    public function autocomplete(Request $request)
+{
+    $data = $request->validate([
+        'q' => 'required|string|min:2',
+    ], [
+        'q.required' => 'Kata kunci wajib diisi',
+        'q.min' => 'Ketik minimal 2 huruf',
+    ]);
+
+    $hasil = DB::table('produk')
+        ->join('satuan', 'satuan.id', '=', 'produk.satuan_id')
+        ->whereNull('produk.deleted_at')
+        ->where('produk.nama', 'like', '%' . $data['q'] . '%')
+        ->select('produk.id', 'produk.nama', 'satuan.nama as satuan', 'produk.harga_jual', 'produk.stok')
+        ->orderBy('produk.nama')
+        ->limit(10)
+        ->get();
+
+    return response()->json($hasil);
+}
 }

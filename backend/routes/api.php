@@ -22,4 +22,8 @@ Route::middleware('role:pemilik')->group(function () {
     Route::put('/produk/{id}', [ProdukController::class, 'update']);
     Route::delete('/produk/{id}', [ProdukController::class, 'destroy']);
     });
+
+Route::middleware('role:kasir,pemilik')->group(function () {
+    Route::get('/produk/autocomplete', [ProdukController::class, 'autocomplete']);
+    });
 });
