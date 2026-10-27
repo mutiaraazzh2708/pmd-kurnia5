@@ -1,39 +1,47 @@
 import 'package:flutter/material.dart';
+import '../../services/kasir_service.dart';
+import '../struk_screen.dart';
 
 class ItemKeranjang {
+  final int productId;
   final String nama;
-  final int hargaUmum;
+  final int hargaEceran;
   final int hargaGrosir;
+  final int stok;
   int jumlah;
 
   ItemKeranjang({
+    required this.productId,
     required this.nama,
-    required this.hargaUmum,
+    required this.hargaEceran,
     required this.hargaGrosir,
+    required this.stok,
     this.jumlah = 1,
   });
 }
 
 class KeranjangScreen extends StatefulWidget {
-  const KeranjangScreen({super.key});
+  // Daftar item dikirim dari layar Kasir.
+  final List<ItemKeranjang> items;
+
+  const KeranjangScreen({super.key, required this.items});
 
   @override
   State<KeranjangScreen> createState() => _KeranjangScreenState();
 }
 
 class _KeranjangScreenState extends State<KeranjangScreen> {
-  // Data tiruan. Nanti diganti data dari layar kasir dan API.
-  final List<ItemKeranjang> _items = [
-    ItemKeranjang(nama: 'Gula Pasir 1 kg', hargaUmum: 15000, hargaGrosir: 14000, jumlah: 2),
-    ItemKeranjang(nama: 'Minyak Goreng 1 L', hargaUmum: 18000, hargaGrosir: 17000),
-    ItemKeranjang(nama: 'Beras 5 kg', hargaUmum: 70000, hargaGrosir: 67000),
-  ];
+  // Sama dengan list di layar Kasir, jadi perubahan di sini ikut terbawa.
+  late final List<ItemKeranjang> _items = widget.items;
 
-  String _tipePembeli = 'umum';
+  String _tipePembeli = 'eceran';
   String _metodeBayar = 'tunai';
 
+  bool _menyimpan = false;
+  String? _errorValidasi;
+
   int _harga(ItemKeranjang i) =>
-      _tipePembeli == 'umum' ? i.hargaUmum : i.hargaGrosir;
+      _tipePembeli == 'eceran' ? i.hargaEceran : i.hargaGrosir;
 
   int get _total => _items.fold(0, (sum, i) => sum + _harga(i) * i.jumlah);
 
@@ -47,23 +55,71 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
     return 'Rp $buf';
   }
 
-  void _ubahJumlah(ItemKeranjang item, int delta) {
-    setState(() {
-      item.jumlah += delta;
-      if (item.jumlah <= 0) _items.remove(item);
-    });
-  }
-
-  // Nanti diisi POST transaksi ke API.
-  void _bayar() {
-    debugPrint('Transaksi: tipe=$_tipePembeli, metode=$_metodeBayar, total=$_total, '
-        'item=${_items.map((i) => '${i.nama} x${i.jumlah}').toList()}');
+  void _snack(String pesan, {bool error = true}) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Transaksi tercetak di konsol')),
+      SnackBar(
+        content: Text(pesan),
+        backgroundColor: error ? Colors.red : Colors.green,
+      ),
     );
   }
 
+  void _ubahJumlah(ItemKeranjang item, int delta) {
+    // Tidak boleh melebihi stok.
+    if (delta > 0 && item.jumlah + delta > item.stok) {
+      _snack('Stok ${item.nama} hanya ${item.stok}');
+      return;
+    }
+    setState(() {
+      item.jumlah += delta;
+      if (item.jumlah <= 0) _items.remove(item);
+      _errorValidasi = null;
+    });
+  }
+
+  // Validasi transaksi (#55). Mengembalikan pesan error, null jika valid.
+  String? _validasi() {
+    if (_items.isEmpty) return 'Keranjang masih kosong';
+    for (final i in _items) {
+      if (i.jumlah < 1) return 'Jumlah ${i.nama} minimal 1';
+      if (i.jumlah > i.stok) {
+        return 'Stok ${i.nama} tidak cukup (sisa ${i.stok})';
+      }
+    }
+    return null;
+  }
+
+  // Kirim transaksi ke API (#43), lalu buka layar struk.
+  Future<void> _bayar() async {
+    setState(() => _menyimpan = true);
+    try {
+      final trx = await KasirService.simpanTransaksi(
+        items: _items
+            .map((i) => {'product_id': i.productId, 'qty': i.jumlah})
+            .toList(),
+        tipe: _tipePembeli,
+        metode: _metodeBayar,
+      );
+      _items.clear(); // kosongkan keranjang setelah berhasil
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => StrukScreen(transaksi: trx)),
+      );
+    } catch (e) {
+      // Pesan dari server, misalnya stok tidak cukup.
+      if (mounted) _snack(e.toString());
+    } finally {
+      if (mounted) setState(() => _menyimpan = false);
+    }
+  }
+
   void _konfirmasi() {
+    final err = _validasi();
+    setState(() => _errorValidasi = err);
+    if (err != null) return;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -112,7 +168,8 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
                   Card(
                     child: ListTile(
                       title: Text(item.nama),
-                      subtitle: Text(_rp(_harga(item))),
+                      subtitle: Text(
+                          '${_rp(_harga(item))}  |  Stok ${item.stok}'),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -134,7 +191,7 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
                 const SizedBox(height: 8),
                 SegmentedButton<String>(
                   segments: const [
-                    ButtonSegment(value: 'umum', label: Text('Umum')),
+                    ButtonSegment(value: 'eceran', label: Text('Eceran')),
                     ButtonSegment(value: 'grosir', label: Text('Grosir')),
                   ],
                   selected: {_tipePembeli},
@@ -147,12 +204,21 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
                 SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'tunai', label: Text('Tunai')),
-                    ButtonSegment(value: 'transfer', label: Text('Transfer')),
+                    ButtonSegment(
+                        value: 'transfer', label: Text('Transfer')),
                   ],
                   selected: {_metodeBayar},
                   onSelectionChanged: (s) =>
                       setState(() => _metodeBayar = s.first),
                 ),
+                if (_errorValidasi != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      _errorValidasi!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -167,8 +233,15 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
                             fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                   ElevatedButton(
-                    onPressed: _items.isEmpty ? null : _konfirmasi,
-                    child: const Text('Bayar'),
+                    onPressed:
+                    (_items.isEmpty || _menyimpan) ? null : _konfirmasi,
+                    child: _menyimpan
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text('Bayar'),
                   ),
                 ],
               ),
