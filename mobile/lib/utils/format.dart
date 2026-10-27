@@ -8,4 +8,4 @@ String rupiah(num angka) {
   ).format(angka);
 }
 
-String tanggal(DateTime d) => DateFormat('dd/MM/yyyy HH:mm').format(d);
+String tanggal( DateTime d) => DateFormat('dd/MM/yyyy HH:mm').format(d);
