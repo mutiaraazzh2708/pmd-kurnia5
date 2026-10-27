@@ -16,14 +16,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/transaksi', [TransaksiController::class, 'index']);
     Route::get('/transaksi/{id}', [TransaksiController::class, 'show']);
 
-Route::middleware('role:pemilik')->group(function () {
-    Route::post('/satuan', [SatuanController::class, 'store']);
-    Route::post('/produk', [ProdukController::class, 'store']);
-    Route::put('/produk/{id}', [ProdukController::class, 'update']);
-    Route::delete('/produk/{id}', [ProdukController::class, 'destroy']);
+    Route::middleware('role:pemilik')->group(function () {
+        Route::post('/satuan', [SatuanController::class, 'store']);
+        Route::post('/produk', [ProdukController::class, 'store']);
+        Route::put('/produk/{id}', [ProdukController::class, 'update']);
+        Route::delete('/produk/{id}', [ProdukController::class, 'destroy']);
     });
 
-Route::middleware('role:kasir,pemilik')->group(function () {
-    Route::get('/produk/autocomplete', [ProdukController::class, 'autocomplete']);
+    Route::middleware('role:kasir,pemilik')->group(function () {
+        Route::get('/produk/autocomplete', [ProdukController::class, 'autocomplete']);
+        Route::post('/transaksi', [TransaksiController::class, 'store']);
     });
 });
