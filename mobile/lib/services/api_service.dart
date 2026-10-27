@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import 'api_client.dart' show ApiClient;
+
 class ApiException implements Exception {
   final String message;
   ApiException(this.message);
@@ -46,7 +48,9 @@ class ApiService {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (response.statusCode == 200) {
-        await _storage.write(key: _tokenKey, value: data['token'] as String);
+        final token = data['token'] as String;
+        await _storage.write(key: _tokenKey, value: token);
+        ApiClient.token = token; // dipakai KasirService
         return data;
       }
 
@@ -63,5 +67,8 @@ class ApiService {
 
   static Future<String?> getToken() => _storage.read(key: _tokenKey);
 
-  static Future<void> clearToken() => _storage.delete(key: _tokenKey);
+  static Future<void> clearToken() async {
+    ApiClient.token = null;
+    await _storage.delete(key: _tokenKey);
+  }
 }
