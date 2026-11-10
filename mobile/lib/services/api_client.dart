@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'api_service.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -9,7 +10,7 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  static String get baseUrl => ApiService.baseUrl;
   // Isi token ini dari login Sprint 1 (ApiClient.token = hasilLogin.token)
   static String? token;
 

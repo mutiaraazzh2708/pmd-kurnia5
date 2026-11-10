@@ -48,18 +48,23 @@ class Transaksi {
     required this.items,
   });
 
-  factory Transaksi.fromJson(Map<String, dynamic> j) => Transaksi(
-    id: toInt(j['id']),
-    nomor: j['nomor']?.toString() ?? 'TRX-${j['id']}',
-    tanggal: DateTime.tryParse(j['created_at']?.toString() ?? '') ??
-        DateTime.now(),
-    total: toInt(j['total']),
-    bayar: toInt(j['bayar']),
-    kembalian: toInt(j['kembalian']),
-    metodeBayar: j['metode_bayar']?.toString() ?? '-',
-    tipePembeli: j['tipe_pembeli']?.toString() ?? '-',
-    items: ((j['items'] ?? []) as List)
-        .map((e) => TransaksiItem.fromJson(e))
-        .toList(),
-  );
+  factory Transaksi.fromJson(Map<String, dynamic> j) {
+    // Backend mengembalikan items dengan key 'detail' (relasi hasMany)
+    // atau 'items' (dari KasirService.simpanTransaksi yang sudah memetakan ulang)
+    final rawItems = j['detail'] ?? j['items'] ?? [];
+    return Transaksi(
+      id: toInt(j['id']),
+      nomor: j['nomor']?.toString() ?? 'TRX-${j['id']}',
+      tanggal: DateTime.tryParse(j['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+      total: toInt(j['total']),
+      bayar: toInt(j['bayar']),
+      kembalian: toInt(j['kembalian']),
+      metodeBayar: j['metode_bayar']?.toString() ?? '-',
+      tipePembeli: j['tipe_pembeli']?.toString() ?? '-',
+      items: (rawItems as List)
+          .map((e) => TransaksiItem.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+    );
+  }
 }

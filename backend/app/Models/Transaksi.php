@@ -18,4 +18,9 @@ class Transaksi extends Model
     {
         return $this->hasMany(DetailTransaksi::class);
     }
+
+    public function retur()
+    {
+        return $this->hasMany(Retur::class);
+    }
 }

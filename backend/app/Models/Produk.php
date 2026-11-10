@@ -3,19 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Produk extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'produk';
-    protected $fillable = ['nama', 'satuan_dasar', 'stok_minimum', 'aktif'];
+
+    protected $fillable = [
+        'nama',
+        'satuan_id',
+        'harga_beli',
+        'harga_jual',
+        'harga_grosir',
+        'stok',
+    ];
 
     public function satuan()
     {
-        return $this->hasMany(ProdukSatuan::class, 'produk_id');
-    }
-
-    public function stok()
-    {
-        return $this->hasMany(Stok::class, 'produk_id');
+        return $this->belongsTo(Satuan::class, 'satuan_id');
     }
 }

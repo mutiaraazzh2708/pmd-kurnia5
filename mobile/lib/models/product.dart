@@ -20,14 +20,17 @@ class Product {
       tipe.toLowerCase() == 'grosir' ? hargaGrosir : hargaEceran;
 
   factory Product.fromJson(Map<String, dynamic> j) {
-    // Kontrak hanya punya harga_jual, jadi grosir sementara sama dengan eceran.
     final jual = toInt(j['harga_jual'] ?? j['harga_eceran'] ?? j['harga']);
+    // harga_grosir dari API, fallback ke 90% harga_jual jika tidak ada
+    final grosir = j['harga_grosir'] != null
+        ? toInt(j['harga_grosir'])
+        : (jual * 0.9).round();
     return Product(
       id: toInt(j['id']),
       nama: j['nama']?.toString() ?? '',
       stok: toInt(j['stok']),
       hargaEceran: jual,
-      hargaGrosir: j['harga_grosir'] != null ? toInt(j['harga_grosir']) : jual,
+      hargaGrosir: grosir,
     );
   }
 }

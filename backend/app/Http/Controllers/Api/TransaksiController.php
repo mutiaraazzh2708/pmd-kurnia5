@@ -12,7 +12,7 @@ class TransaksiController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Transaksi::with('kasir:id,name,username')->latest();
+        $query = Transaksi::with(['kasir:id,name,username', 'detail.produk:id,nama'])->latest();
 
         if ($request->filled('metode_bayar')) {
             $query->where('metode_bayar', $request->metode_bayar);
@@ -98,10 +98,12 @@ class TransaksiController extends Controller
             return $transaksiId;
         });
 
+        $transaksi = Transaksi::with(['kasir:id,name,username', 'detail.produk:id,nama'])->find($id);
+
         return response()->json([
             'message' => 'Transaksi berhasil disimpan',
-            'transaksi' => DB::table('transaksi')->find($id),
-            'detail' => DB::table('detail_transaksi')->where('transaksi_id', $id)->get(),
+            'transaksi' => $transaksi,
+            'detail' => $transaksi->detail,
         ], 201);
     }
 }
