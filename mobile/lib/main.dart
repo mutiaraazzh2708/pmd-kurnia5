@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/barang_masuk_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/mutasi_provider.dart';
 import 'providers/supplier_provider.dart';
 import 'screens/pilih_peran_screen.dart';
 
@@ -16,6 +17,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => SupplierProvider()),
         ChangeNotifierProvider(create: (_) => BarangMasukProvider()),
+        ChangeNotifierProvider(create: (_) => MutasiProvider()),
       ],
       child: const MyApp(),
     ),

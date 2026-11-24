@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/api_service.dart';
 import 'barang_masuk_page.dart';
+import 'mutasi_page.dart';
 import 'pilih_peran_screen.dart';
 import 'produk_list_screen.dart';
 import 'riwayat_screen.dart';
+import 'stok_page.dart';
 import 'supplier_page.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -78,8 +80,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           {'icon': Icons.inventory_2_outlined, 'label': 'Produk', 'sub': 'Lihat daftar produk', 'active': true, 'route': 'produk'},
           {'icon': Icons.local_shipping_outlined, 'label': 'Supplier', 'sub': 'Kelola data supplier', 'active': true, 'route': 'supplier'},
           {'icon': Icons.input_outlined, 'label': 'Barang Masuk', 'sub': 'Catat barang dari supplier', 'active': true, 'route': 'barang_masuk'},
-          {'icon': Icons.layers_outlined, 'label': 'Stok', 'sub': 'Belum tersedia', 'active': false, 'route': null},
-          {'icon': Icons.swap_horiz_outlined, 'label': 'Mutasi', 'sub': 'Belum tersedia', 'active': false, 'route': null},
+          {'icon': Icons.layers_outlined, 'label': 'Stok', 'sub': 'Lihat stok barang', 'active': true, 'route': 'stok'},
+          {'icon': Icons.swap_horiz_outlined, 'label': 'Mutasi', 'sub': 'Pindah stok gudang/toko', 'active': true, 'route': 'mutasi'},
           {'icon': Icons.warehouse_outlined, 'label': 'Gudang', 'sub': 'Belum tersedia', 'active': false, 'route': null},
         ];
       default: // pemilik
@@ -87,10 +89,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           {'icon': Icons.inventory_2_outlined, 'label': 'Produk', 'sub': 'Tambah, lihat, ubah, hapus', 'active': true, 'route': 'produk'},
           {'icon': Icons.access_time_outlined, 'label': 'Riwayat Transaksi', 'sub': 'Pantau penjualan', 'active': true, 'route': 'riwayat'},
           {'icon': Icons.local_shipping_outlined, 'label': 'Supplier', 'sub': 'Kelola data supplier', 'active': true, 'route': 'supplier'},
-          {'icon': Icons.layers_outlined, 'label': 'Stok', 'sub': 'Belum tersedia', 'active': false, 'route': null},
+          {'icon': Icons.layers_outlined, 'label': 'Stok', 'sub': 'Lihat stok barang', 'active': true, 'route': 'stok'},
           {'icon': Icons.bar_chart_outlined, 'label': 'Laporan', 'sub': 'Belum tersedia', 'active': false, 'route': null},
         ];
     }
+  }
+
+  void _push(Widget page) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
   }
 
   void _onMenuTap(Map<String, dynamic> menu) {
@@ -103,22 +109,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         MaterialPageRoute(builder: (_) => const ProdukListScreen()),
       ).then((_) => setState(() => _selectedTab = 0));
     } else if (route == 'riwayat') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const RiwayatScreen(showBottomNav: false),
-        ),
-      );
+      _push(const RiwayatScreen(showBottomNav: false));
     } else if (route == 'supplier') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const SupplierPage()),
-      );
+      _push(const SupplierPage());
     } else if (route == 'barang_masuk') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const BarangMasukPage()),
-      );
+      _push(const BarangMasukPage());
+    } else if (route == 'stok') {
+      _push(const StokPage());
+    } else if (route == 'mutasi') {
+      _push(const MutasiPage());
     }
   }
 
