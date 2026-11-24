@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\SatuanController;
 use App\Http\Controllers\Api\TransaksiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\SupplierController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -30,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/produk', [ProdukController::class, 'store']);
         Route::put('/produk/{id}', [ProdukController::class, 'update']);
         Route::delete('/produk/{id}', [ProdukController::class, 'destroy']);
+        Route::get('/supplier', [SupplierController::class, 'index']);
+        Route::post('/supplier', [SupplierController::class, 'store']);
+        Route::put('/supplier/{id}', [SupplierController::class, 'update']);
     });
 
     // Khusus kasir & pemilik (baca autocomplete)
