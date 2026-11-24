@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\TransaksiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\SupplierController;
+use App\Http\Controllers\Api\RiwayatHargaController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -34,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/supplier', [SupplierController::class, 'index']);
         Route::post('/supplier', [SupplierController::class, 'store']);
         Route::put('/supplier/{id}', [SupplierController::class, 'update']);
+        Route::get('/riwayat-harga', [RiwayatHargaController::class, 'index']);
     });
 
     // Khusus kasir & pemilik (baca autocomplete)

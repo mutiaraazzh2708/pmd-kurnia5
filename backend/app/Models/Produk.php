@@ -24,4 +24,27 @@ class Produk extends Model
     {
         return $this->belongsTo(Satuan::class, 'satuan_id');
     }
+
+    protected static function booted()
+    {
+        static::updating(function ($produk) {
+            $jenis = [
+                'harga_beli'   => 'beli',
+                'harga_jual'   => 'jual',
+                'harga_grosir' => 'grosir',
+            ];
+
+            foreach ($jenis as $kolom => $nama) {
+                if ($produk->isDirty($kolom)) {
+                    \App\Models\RiwayatHarga::create([
+                        'produk_id'  => $produk->id,
+                        'jenis'      => $nama,
+                        'harga_lama' => $produk->getOriginal($kolom) ?? 0,
+                        'harga_baru' => $produk->$kolom ?? 0,
+                        'user_id'    => \Illuminate\Support\Facades\Auth::id(),
+                    ]);
+                }
+            }
+        });
+    }
 }
