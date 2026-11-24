@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PMD Kurnia 5</string>
+    <string name="label_karyawan_toko">KARYAWAN TOKO</string>
+
+    <!-- Header Titles -->
+    <string name="title_barang_masuk">Barang Masuk</string>
+    <string name="title_catat_barang_masuk">Catat Barang Masuk</string>
+    <string name="title_konfirmasi">Konfirmasi</string>
+
+    <!-- Filter Chips -->
+    <string name="filter_semua">Semua</string>
+    <string name="filter_hari_ini">Hari ini</string>
+    <string name="filter_minggu_ini">Minggu ini</string>
+
+    <!-- Form Labels and Placeholders -->
+    <string name="label_supplier">Supplier</string>
+    <string name="placeholder_supplier">Pilih supplier</string>
+    <string name="label_produk">Produk</string>
+    <string name="placeholder_produk">Pilih produk</string>
+    <string name="label_jumlah">Jumlah</string>
+    <string name="label_satuan">Satuan</string>
+    <string name="label_harga_beli">Harga beli per satuan</string>
+    <string name="label_tanggal_masuk">Tanggal masuk</string>
+    <string name="label_total_pembelian">Total pembelian</string>
+
+    <!-- Form Validation Errors -->
+    <string name="error_supplier_empty">Pilih supplier terlebih dahulu</string>
+    <string name="error_produk_empty">Pilih produk terlebih dahulu</string>
+    <string name="error_jumlah_invalid">Jumlah harus lebih dari 0</string>
+    <string name="error_harga_invalid">Harga beli harus lebih dari 0</string>
+
+    <!-- Buttons -->
+    <string name="btn_catat_barang_masuk">+ Catat Barang Masuk</string>
+    <string name="btn_simpan">Simpan</string>
+    <string name="btn_ya_simpan">Ya, simpan</string>
+    <string name="btn_periksa_lagi">Periksa lagi</string>
+    <string name="btn_lihat_stok">Lihat Stok</string>
+    <string name="btn_catat_lagi">Catat Lagi</string>
+
+    <!-- Confirmation & Success -->
+    <string name="label_ringkasan">Ringkasan Barang Masuk</string>
+    <string name="label_stok_setelah_masuk">Stok setelah masuk</string>
+    <string name="title_sukses_tersimpan">Barang masuk tersimpan</string>
+    <string name="desc_sukses_format">Stok %1$s bertambah %2$d %3$s.</string>
+    <string name="status_selesai">Selesai</string>
+
+    <!-- Bottom Navigation -->
+    <string name="tab_beranda">Beranda</string>
+    <string name="tab_supplier">Supplier</string>
+    <string name="tab_masuk">Masuk</string>
+    <string name="tab_stok">Stok</string>
+</resources>

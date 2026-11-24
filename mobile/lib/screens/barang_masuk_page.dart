@@ -218,7 +218,7 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
                   DropdownMenuItem(value: s.id, child: Text(s.nama)))
                   .toList(),
               onChanged: (v) => setState(() => _supplierId = v),
-              validator: (v) => v == null ? 'Pilih supplier' : null,
+              validator: (v) => v == null ? 'Pilih supplier terlebih dahulu' : null,
             ),
             const SizedBox(height: 14),
             DropdownButtonFormField<int>(
@@ -241,7 +241,7 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
                       .replaceAll(RegExp(r'\.0+$'), '');
                 }
               },
-              validator: (v) => v == null ? 'Pilih produk' : null,
+              validator: (v) => v == null ? 'Pilih produk terlebih dahulu' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -265,7 +265,7 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
                   prefixText: 'Rp '),
               validator: (v) {
                 final n = double.tryParse((v ?? '').trim());
-                if (n == null || n < 0) return 'Harga tidak valid';
+                if (n == null || n <= 0) return 'Harga beli harus lebih dari 0';
                 return null;
               },
             ),
