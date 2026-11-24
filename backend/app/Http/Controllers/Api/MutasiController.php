@@ -15,13 +15,28 @@ class MutasiController extends Controller
 
     public function index()
     {
-        return response()->json(
-            Mutasi::with('produk:id,nama')->latest()->get()
-        );
+        $hasil = Mutasi::with('produk:id,nama')->latest()->get()->map(fn ($m) => [
+            'id'         => $m->id,
+            'produk_id'  => $m->produk_id,
+            'produk'     => ['nama' => $m->produk?->nama],
+            'jumlah'     => $m->jumlah,
+            'asal'       => $m->dari,
+            'tujuan'     => $m->ke,
+            'tanggal'    => $m->created_at?->toDateString(),
+            'keterangan' => '',
+        ]);
+
+        return response()->json($hasil);
     }
 
     public function store(Request $request)
     {
+        // terima nama dari mobile (asal/tujuan) maupun nama tabel (dari/ke)
+        $request->merge([
+            'dari' => strtolower((string) $request->input('dari', $request->input('asal'))),
+            'ke'   => strtolower((string) $request->input('ke', $request->input('tujuan'))),
+        ]);
+
         $data = $request->validate([
             'produk_id' => 'required|exists:produk,id',
             'jumlah'    => 'required|integer|min:1',
