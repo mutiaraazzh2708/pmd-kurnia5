@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BarangMasukController;
+use App\Http\Controllers\Api\MutasiController;
 use App\Http\Controllers\Api\ProdukController;
 use App\Http\Controllers\Api\ReturController;
 use App\Http\Controllers\Api\SatuanController;
+use App\Http\Controllers\Api\StokController;
+use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\TransaksiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
