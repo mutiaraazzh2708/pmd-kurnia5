@@ -19,5 +19,6 @@ class UserSeeder extends Seeder
         foreach ($akun as $a) {
             User::create($a + ['password' => Hash::make('password123')]);
         }
+    
     }
 }

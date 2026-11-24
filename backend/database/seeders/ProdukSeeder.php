@@ -31,4 +31,5 @@ class ProdukSeeder extends Seeder
             Produk::firstOrCreate(['nama' => $p['nama']], $p);
         }
     }
+    
 }
