@@ -1,14 +1,16 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BarangMasukController;
+use App\Http\Controllers\Api\MutasiController;
 use App\Http\Controllers\Api\ProdukController;
 use App\Http\Controllers\Api\ReturController;
 use App\Http\Controllers\Api\SatuanController;
+use App\Http\Controllers\Api\StokController;
+use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\TransaksiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\SupplierController;
-use App\Http\Controllers\Api\BarangMasukController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -35,6 +37,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/supplier', [SupplierController::class, 'index']);
         Route::post('/supplier', [SupplierController::class, 'store']);
         Route::put('/supplier/{id}', [SupplierController::class, 'update']);
+
+        // Sprint 3: stok
+        Route::post('/barang-masuk', [BarangMasukController::class, 'store']); // #65
+        Route::get('/mutasi', [MutasiController::class, 'index']);             // #67
+        Route::post('/mutasi', [MutasiController::class, 'store']);            // #67
+        Route::get('/stok', [StokController::class, 'index']);                 // #70
     });
 
     // Khusus kasir & pemilik (baca autocomplete)
@@ -47,6 +55,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/transaksi', [TransaksiController::class, 'store']);
         Route::post('/retur', [ReturController::class, 'store']);
     });
-
-    Route::post('/barang-masuk', [BarangMasukController::class, 'store']);
 });
