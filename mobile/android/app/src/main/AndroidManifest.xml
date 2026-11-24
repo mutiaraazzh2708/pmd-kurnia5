@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
+        android:usesCleartextTraffic="true"
         android:label="pmd_kurnia5"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"

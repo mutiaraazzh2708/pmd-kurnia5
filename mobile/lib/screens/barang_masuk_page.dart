@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../main.dart';
 import '../providers/barang_masuk_provider.dart';
 import '../providers/supplier_provider.dart';
 import '../services/api_service.dart';
-
-String _fmtTanggal(String iso) {
-  if (iso.length >= 10 && iso[4] == '-') {
-    return '${iso.substring(8, 10)}/${iso.substring(5, 7)}/${iso.substring(0, 4)}';
-  }
-  return iso;
-}
+import '../utils/validators.dart';
+import '../widgets/form_helpers.dart';
 
 class BarangMasukPage extends StatefulWidget {
   const BarangMasukPage({super.key});
@@ -35,6 +31,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
       MaterialPageRoute(builder: (_) => const BarangMasukFormPage()),
     );
     if (saved == true && mounted) {
+      context.read<BarangMasukProvider>().fetch();
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Barang masuk berhasil disimpan')));
     }
@@ -84,8 +81,9 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
         itemCount: p.items.length,
         itemBuilder: (_, i) {
           final b = p.items[i];
-          final supplier =
-          b.supplierNama.isEmpty ? 'Supplier #${b.supplierId}' : b.supplierNama;
+          final supplier = b.supplierNama.isEmpty
+              ? 'Supplier #${b.supplierId}'
+              : b.supplierNama;
           return Card(
             child: ListTile(
               leading: const CircleAvatar(
@@ -95,7 +93,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
               title: Text(
                   b.produkNama.isEmpty ? 'Produk #${b.produkId}' : b.produkNama),
               subtitle: Text(
-                '$supplier • ${_fmtTanggal(b.tanggal)}'
+                '$supplier • ${fmtTanggal(b.tanggal)}'
                     '${b.keterangan.isNotEmpty ? '\n${b.keterangan}' : ''}',
               ),
               isThreeLine: b.keterangan.isNotEmpty,
@@ -148,29 +146,35 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
   }
 
   Future<void> _loadProduk() async {
-    final list = await ApiService.getProduk();
-    if (!mounted) return;
-    setState(() {
-      _produk = list;
-      _loadingProduk = false;
-    });
-  }
-
-  String get _tanggalIso =>
-      '${_tanggal.year}-${_tanggal.month.toString().padLeft(2, '0')}-${_tanggal.day.toString().padLeft(2, '0')}';
-
-  Future<void> _pickTanggal() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _tanggal,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-    );
-    if (d != null) setState(() => _tanggal = d);
+    try {
+      final list = await ApiService.getProduk();
+      if (!mounted) return;
+      setState(() {
+        _produk = list;
+        _loadingProduk = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingProduk = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(pesanError(e))));
+    }
   }
 
   Future<void> _simpan() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_saving) return;
+    if (!_formKey.currentState!.validate()) return; // validasi dulu (#69)
+
+    final namaProduk = _produk
+        .firstWhere((e) => '${e['id']}' == '$_produkId', orElse: () => null)
+    ?['nama'];
+    final ya = await konfirmasi(
+      context,
+      judul: 'Simpan barang masuk?',
+      isi: '${namaProduk ?? 'Produk'}\nJumlah: ${_jumlah.text.trim()}',
+    );
+    if (!ya || !mounted) return;
+
     setState(() => _saving = true);
     try {
       await context.read<BarangMasukProvider>().tambah(
@@ -178,7 +182,7 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
         produkId: _produkId!,
         jumlah: int.parse(_jumlah.text.trim()),
         hargaBeli: double.parse(_harga.text.trim()),
-        tanggal: _tanggalIso,
+        tanggal: tanggalIso(_tanggal),
         keterangan: _ket.text.trim(),
       );
       if (mounted) Navigator.pop(context, true);
@@ -186,7 +190,7 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$e')));
+            .showSnackBar(SnackBar(content: Text(pesanError(e))));
       }
     }
   }
@@ -211,11 +215,12 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
           children: [
             DropdownButtonFormField<int>(
               value: _supplierId,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Supplier'),
               items: suppliers
                   .where((s) => s.id != null)
-                  .map((s) =>
-                  DropdownMenuItem(value: s.id, child: Text(s.nama)))
+                  .map((s) => DropdownMenuItem(
+                  value: s.id, child: Text(s.nama)))
                   .toList(),
               onChanged: (v) => setState(() => _supplierId = v),
               validator: (v) => v == null ? 'Pilih supplier' : null,
@@ -223,6 +228,7 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
             const SizedBox(height: 14),
             DropdownButtonFormField<int>(
               value: _produkId,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Produk'),
               items: _produk.map<DropdownMenuItem<int>>((e) {
                 final id = e['id'] is int
@@ -241,43 +247,35 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
                       .replaceAll(RegExp(r'\.0+$'), '');
                 }
               },
-              validator: (v) => v == null ? 'Pilih produk' : null,
+              validator: Validators.produk,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _jumlah,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               decoration: const InputDecoration(labelText: 'Jumlah'),
-              validator: (v) {
-                final n = int.tryParse((v ?? '').trim());
-                if (n == null || n <= 0) {
-                  return 'Jumlah harus lebih dari 0';
-                }
-                return null;
-              },
+              validator: (v) => Validators.jumlah(v),
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _harga,
-              keyboardType: TextInputType.number,
+              keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
+              ],
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               decoration: const InputDecoration(
                   labelText: 'Harga Beli (per satuan)',
                   prefixText: 'Rp '),
-              validator: (v) {
-                final n = double.tryParse((v ?? '').trim());
-                if (n == null || n < 0) return 'Harga tidak valid';
-                return null;
-              },
+              validator: Validators.hargaBeli,
             ),
             const SizedBox(height: 14),
-            InkWell(
-              onTap: _pickTanggal,
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                    labelText: 'Tanggal',
-                    suffixIcon: Icon(Icons.calendar_today)),
-                child: Text(_fmtTanggal(_tanggalIso)),
-              ),
+            TanggalField(
+              value: _tanggal,
+              onChanged: (d) => _tanggal = d,
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -290,7 +288,8 @@ class _BarangMasukFormPageState extends State<BarangMasukFormPage> {
             SizedBox(
               height: 48,
               child: FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: kPrimary),
+                style:
+                FilledButton.styleFrom(backgroundColor: kPrimary),
                 onPressed: _saving ? null : _simpan,
                 child: _saving
                     ? const SizedBox(

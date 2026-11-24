@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../main.dart';
 import '../providers/mutasi_provider.dart';
 import '../services/api_service.dart';
-
-String _fmtTanggal(String iso) {
-  if (iso.length >= 10 && iso[4] == '-') {
-    return '${iso.substring(8, 10)}/${iso.substring(5, 7)}/${iso.substring(0, 4)}';
-  }
-  return iso;
-}
+import '../utils/validators.dart';
+import '../widgets/form_helpers.dart';
 
 class MutasiPage extends StatefulWidget {
   const MutasiPage({super.key});
@@ -22,8 +18,8 @@ class _MutasiPageState extends State<MutasiPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-            (_) => context.read<MutasiProvider>().fetch());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => context.read<MutasiProvider>().fetch());
   }
 
   Future<void> _openForm() async {
@@ -32,6 +28,7 @@ class _MutasiPageState extends State<MutasiPage> {
       MaterialPageRoute(builder: (_) => const MutasiFormPage()),
     );
     if (saved == true && mounted) {
+      context.read<MutasiProvider>().fetch(); // refresh daftar
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Mutasi berhasil disimpan')));
     }
@@ -71,7 +68,13 @@ class _MutasiPageState extends State<MutasiPage> {
       );
     }
     if (p.items.isEmpty) {
-      return const Center(child: Text('Belum ada data mutasi'));
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: const [
+          Icon(Icons.swap_horiz, size: 56, color: Colors.grey),
+          SizedBox(height: 8),
+          Text('Belum ada mutasi'),
+        ]),
+      );
     }
 
     return RefreshIndicator(
@@ -90,7 +93,7 @@ class _MutasiPageState extends State<MutasiPage> {
               title: Text(
                   m.produkNama.isEmpty ? 'Produk #${m.produkId}' : m.produkNama),
               subtitle: Text(
-                '${m.asal} → ${m.tujuan} • ${_fmtTanggal(m.tanggal)}'
+                '${m.asal} → ${m.tujuan} • ${fmtTanggal(m.tanggal)}'
                     '${m.keterangan.isNotEmpty ? '\n${m.keterangan}' : ''}',
               ),
               isThreeLine: m.keterangan.isNotEmpty,
@@ -115,8 +118,6 @@ class MutasiFormPage extends StatefulWidget {
 }
 
 class _MutasiFormPageState extends State<MutasiFormPage> {
-  static const _lokasi = ['Gudang', 'Toko'];
-
   final _formKey = GlobalKey<FormState>();
   final _jumlah = TextEditingController();
   final _ket = TextEditingController();
@@ -126,9 +127,10 @@ class _MutasiFormPageState extends State<MutasiFormPage> {
   bool _saving = false;
 
   int? _produkId;
-  String? _asal = 'Gudang';
-  String? _tujuan = 'Toko';
+  String _asal = 'Gudang'; // 'Gudang' = Gudang → Toko, 'Toko' = Toko → Gudang
   DateTime _tanggal = DateTime.now();
+
+  String get _tujuan => _asal == 'Gudang' ? 'Toko' : 'Gudang';
 
   @override
   void initState() {
@@ -144,37 +146,56 @@ class _MutasiFormPageState extends State<MutasiFormPage> {
   }
 
   Future<void> _loadProduk() async {
-    final list = await ApiService.getProduk();
-    if (!mounted) return;
-    setState(() {
-      _produk = list;
-      _loadingProduk = false;
-    });
+    try {
+      final list = await ApiService.getProduk();
+      if (!mounted) return;
+      setState(() {
+        _produk = list;
+        _loadingProduk = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingProduk = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(pesanError(e))));
+    }
   }
 
-  String get _tanggalIso =>
-      '${_tanggal.year}-${_tanggal.month.toString().padLeft(2, '0')}-${_tanggal.day.toString().padLeft(2, '0')}';
+  dynamic get _produkTerpilih {
+    if (_produkId == null) return null;
+    return _produk.firstWhere((e) => '${e['id']}' == '$_produkId',
+        orElse: () => null);
+  }
 
-  Future<void> _pickTanggal() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _tanggal,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-    );
-    if (d != null) setState(() => _tanggal = d);
+  /// Stok di lokasi asal. null = API tidak mengirim stok lokasi itu.
+  int? get _stokAsal {
+    final p = _produkTerpilih;
+    if (p == null) return null;
+    return _asal == 'Gudang' ? StokUtil.gudang(p) : StokUtil.toko(p);
   }
 
   Future<void> _simpan() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_saving) return;
+    if (!_formKey.currentState!.validate()) return; // validasi dulu (#69)
+
+    final p = _produkTerpilih;
+    final ya = await konfirmasi(
+      context,
+      judul: 'Simpan mutasi?',
+      isi: '${p?['nama'] ?? 'Produk'}\n'
+          '$_asal → $_tujuan\n'
+          'Jumlah: ${_jumlah.text.trim()}',
+    );
+    if (!ya || !mounted) return;
+
     setState(() => _saving = true);
     try {
       await context.read<MutasiProvider>().tambah(
         produkId: _produkId!,
         jumlah: int.parse(_jumlah.text.trim()),
-        asal: _asal!,
-        tujuan: _tujuan!,
-        tanggal: _tanggalIso,
+        asal: _asal,
+        tujuan: _tujuan,
+        tanggal: tanggalIso(_tanggal),
         keterangan: _ket.text.trim(),
       );
       if (mounted) Navigator.pop(context, true);
@@ -182,13 +203,15 @@ class _MutasiFormPageState extends State<MutasiFormPage> {
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$e')));
+            .showSnackBar(SnackBar(content: Text(pesanError(e))));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final stok = _stokAsal;
+
     return Scaffold(
       backgroundColor: kBackground,
       appBar: AppBar(
@@ -203,8 +226,20 @@ class _MutasiFormPageState extends State<MutasiFormPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                    value: 'Gudang', label: Text('Gudang → Toko')),
+                ButtonSegment(
+                    value: 'Toko', label: Text('Toko → Gudang')),
+              ],
+              selected: {_asal},
+              onSelectionChanged: (s) => setState(() => _asal = s.first),
+            ),
+            const SizedBox(height: 14),
             DropdownButtonFormField<int>(
               value: _produkId,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Produk'),
               items: _produk.map<DropdownMenuItem<int>>((e) {
                 final id = e['id'] is int
@@ -214,54 +249,26 @@ class _MutasiFormPageState extends State<MutasiFormPage> {
                     value: id, child: Text('${e['nama']}'));
               }).toList(),
               onChanged: (v) => setState(() => _produkId = v),
-              validator: (v) => v == null ? 'Pilih produk' : null,
-            ),
-            const SizedBox(height: 14),
-            DropdownButtonFormField<String>(
-              value: _asal,
-              decoration: const InputDecoration(labelText: 'Dari'),
-              items: _lokasi
-                  .map((l) => DropdownMenuItem(value: l, child: Text(l)))
-                  .toList(),
-              onChanged: (v) => setState(() => _asal = v),
-              validator: (v) => v == null ? 'Pilih lokasi asal' : null,
-            ),
-            const SizedBox(height: 14),
-            DropdownButtonFormField<String>(
-              value: _tujuan,
-              decoration: const InputDecoration(labelText: 'Ke'),
-              items: _lokasi
-                  .map((l) => DropdownMenuItem(value: l, child: Text(l)))
-                  .toList(),
-              onChanged: (v) => setState(() => _tujuan = v),
-              validator: (v) {
-                if (v == null) return 'Pilih lokasi tujuan';
-                if (v == _asal) return 'Tujuan harus berbeda dari asal';
-                return null;
-              },
+              validator: Validators.produk,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _jumlah,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Jumlah'),
-              validator: (v) {
-                final n = int.tryParse((v ?? '').trim());
-                if (n == null || n <= 0) {
-                  return 'Jumlah harus lebih dari 0';
-                }
-                return null;
-              },
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              decoration: InputDecoration(
+                labelText: 'Jumlah',
+                helperText:
+                stok == null ? null : 'Stok $_asal: $stok',
+              ),
+              validator: (v) => Validators.jumlah(v,
+                  maxStok: stok, lokasi: _asal.toLowerCase()),
             ),
             const SizedBox(height: 14),
-            InkWell(
-              onTap: _pickTanggal,
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                    labelText: 'Tanggal',
-                    suffixIcon: Icon(Icons.calendar_today)),
-                child: Text(_fmtTanggal(_tanggalIso)),
-              ),
+            TanggalField(
+              value: _tanggal,
+              onChanged: (d) => _tanggal = d,
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -274,7 +281,8 @@ class _MutasiFormPageState extends State<MutasiFormPage> {
             SizedBox(
               height: 48,
               child: FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: kPrimary),
+                style:
+                FilledButton.styleFrom(backgroundColor: kPrimary),
                 onPressed: _saving ? null : _simpan,
                 child: _saving
                     ? const SizedBox(
