@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'providers/barang_masuk_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/supplier_provider.dart';
 import 'screens/pilih_peran_screen.dart';
 
 const Color kPrimary = Color(0xFF1B3252);
@@ -12,6 +14,8 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => SupplierProvider()),
+        ChangeNotifierProvider(create: (_) => BarangMasukProvider()),
       ],
       child: const MyApp(),
     ),

@@ -17,7 +17,7 @@ class ApiException implements Exception {
 
 class ApiService {
   // Emulator Android: 10.0.2.2. Untuk HP fisik gunakan IP WiFi laptop
-  static const String baseUrl = 'http://192.168.1.17:8000/api';
+  static const String baseUrl = 'http://10.87.82.68:8000/api';
 
   static const _storage = FlutterSecureStorage();
   static const _tokenKey = 'auth_token';
@@ -39,14 +39,14 @@ class ApiService {
     try {
       final response = await http
           .post(
-            url,
-            headers: _headers,
-            body: jsonEncode({
-              'username': username,
-              'password': password,
-              'role': role,
-            }),
-          )
+        url,
+        headers: _headers,
+        body: jsonEncode({
+          'username': username,
+          'password': password,
+          'role': role,
+        }),
+      )
           .timeout(const Duration(seconds: 15));
 
       final data = jsonDecode(response.body);
@@ -179,20 +179,20 @@ class ApiService {
     try {
       final response = await http
           .post(
-            url,
-            headers: {
-              ..._headers,
-              if (token != null) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({
-              'nama': nama,
-              'satuan_dasar': satuanDasar,
-              'harga_beli': hargaBeli,
-              'harga_jual': hargaJual,
-              'stok_awal': stokAwal,
-              'stok': stokAwal,
-            }),
-          )
+        url,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'nama': nama,
+          'satuan_dasar': satuanDasar,
+          'harga_beli': hargaBeli,
+          'harga_jual': hargaJual,
+          'stok_awal': stokAwal,
+          'stok': stokAwal,
+        }),
+      )
           .timeout(const Duration(seconds: 15));
 
       final data = jsonDecode(response.body);
@@ -223,19 +223,19 @@ class ApiService {
     try {
       final response = await http
           .put(
-            url,
-            headers: {
-              ..._headers,
-              if (token != null) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({
-              'nama': nama,
-              'satuan_dasar': satuanDasar,
-              'harga_beli': hargaBeli,
-              'harga_jual': hargaJual,
-              'stok': stok,
-            }),
-          )
+        url,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'nama': nama,
+          'satuan_dasar': satuanDasar,
+          'harga_beli': hargaBeli,
+          'harga_jual': hargaJual,
+          'stok': stok,
+        }),
+      )
           .timeout(const Duration(seconds: 15));
 
       final data = jsonDecode(response.body);
@@ -266,6 +266,113 @@ class ApiService {
       ).timeout(const Duration(seconds: 15));
 
       return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ==================== SUPPLIER (US-11) ====================
+
+  static Future<Map<String, String>> _authHeaders({bool json = false}) async {
+    final token = await getToken();
+    return {
+      'Accept': 'application/json',
+      if (json) 'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // TODO-SESUAIKAN: endpoint '/supplier' dengan backend
+  static Future<List<dynamic>> getSupplier() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/supplier'), headers: await _authHeaders())
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is List) return decoded;
+        if (decoded is Map && decoded['data'] is List) return decoded['data'];
+        return [];
+      }
+      throw ApiException('Gagal memuat supplier (${response.statusCode})');
+    } on SocketException {
+      throw ApiException('Tidak dapat terhubung ke server');
+    } on TimeoutException {
+      throw ApiException('Koneksi timeout, coba lagi');
+    }
+  }
+
+  static Future<Map<String, dynamic>> tambahSupplier({
+    required String nama,
+    required String alamat,
+    required String telepon,
+  }) async {
+    try {
+      final response = await http
+          .post(
+        Uri.parse('$baseUrl/supplier'),
+        headers: await _authHeaders(json: true),
+        body: jsonEncode({
+          'nama': nama,
+          'alamat': alamat,
+          'telepon': telepon,
+        }),
+      )
+          .timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return {'success': true, 'data': data};
+      }
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Gagal menambahkan supplier.',
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Koneksi error ($e)'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateSupplier({
+    required int id,
+    required String nama,
+    required String alamat,
+    required String telepon,
+  }) async {
+    try {
+      final response = await http
+          .put(
+        Uri.parse('$baseUrl/supplier/$id'),
+        headers: await _authHeaders(json: true),
+        body: jsonEncode({
+          'nama': nama,
+          'alamat': alamat,
+          'telepon': telepon,
+        }),
+      )
+          .timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': data};
+      }
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Gagal memperbarui supplier.',
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Koneksi error ($e)'};
+    }
+  }
+
+  static Future<bool> deleteSupplier(int id) async {
+    try {
+      final response = await http
+          .delete(Uri.parse('$baseUrl/supplier/$id'),
+          headers: await _authHeaders())
+          .timeout(const Duration(seconds: 15));
+      return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
       return false;
     }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/api_service.dart';
+import 'barang_masuk_page.dart';
 import 'pilih_peran_screen.dart';
 import 'produk_list_screen.dart';
 import 'riwayat_screen.dart';
+import 'supplier_page.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -41,7 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const PilihPeranScreen()),
-      (route) => false,
+          (route) => false,
     );
   }
 
@@ -74,8 +76,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'karyawan_toko':
         return [
           {'icon': Icons.inventory_2_outlined, 'label': 'Produk', 'sub': 'Lihat daftar produk', 'active': true, 'route': 'produk'},
+          {'icon': Icons.local_shipping_outlined, 'label': 'Supplier', 'sub': 'Kelola data supplier', 'active': true, 'route': 'supplier'},
+          {'icon': Icons.input_outlined, 'label': 'Barang Masuk', 'sub': 'Catat barang dari supplier', 'active': true, 'route': 'barang_masuk'},
           {'icon': Icons.layers_outlined, 'label': 'Stok', 'sub': 'Belum tersedia', 'active': false, 'route': null},
-          {'icon': Icons.input_outlined, 'label': 'Barang Masuk', 'sub': 'Belum tersedia', 'active': false, 'route': null},
           {'icon': Icons.swap_horiz_outlined, 'label': 'Mutasi', 'sub': 'Belum tersedia', 'active': false, 'route': null},
           {'icon': Icons.warehouse_outlined, 'label': 'Gudang', 'sub': 'Belum tersedia', 'active': false, 'route': null},
         ];
@@ -83,6 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return [
           {'icon': Icons.inventory_2_outlined, 'label': 'Produk', 'sub': 'Tambah, lihat, ubah, hapus', 'active': true, 'route': 'produk'},
           {'icon': Icons.access_time_outlined, 'label': 'Riwayat Transaksi', 'sub': 'Pantau penjualan', 'active': true, 'route': 'riwayat'},
+          {'icon': Icons.local_shipping_outlined, 'label': 'Supplier', 'sub': 'Kelola data supplier', 'active': true, 'route': 'supplier'},
           {'icon': Icons.layers_outlined, 'label': 'Stok', 'sub': 'Belum tersedia', 'active': false, 'route': null},
           {'icon': Icons.bar_chart_outlined, 'label': 'Laporan', 'sub': 'Belum tersedia', 'active': false, 'route': null},
         ];
@@ -105,6 +109,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (_) => const RiwayatScreen(showBottomNav: false),
         ),
       );
+    } else if (route == 'supplier') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SupplierPage()),
+      );
+    } else if (route == 'barang_masuk') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const BarangMasukPage()),
+      );
     }
   }
 
@@ -115,42 +129,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: kPrimary))
           : Column(
-              children: [
-                // Header
-                _buildHeader(),
+        children: [
+          // Header
+          _buildHeader(),
 
-                // Konten
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Info Card
-                        _buildInfoCard(),
-                        const SizedBox(height: 20),
+          // Konten
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Info Card
+                  _buildInfoCard(),
+                  const SizedBox(height: 20),
 
-                        // Grid Menu
-                        GridView.count(
-                          crossAxisCount: 2,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 1.1,
-                          children: _menuItems
-                              .map((menu) => _buildMenuCard(menu))
-                              .toList(),
-                        ),
-                      ],
-                    ),
+                  // Grid Menu
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.1,
+                    children: _menuItems
+                        .map((menu) => _buildMenuCard(menu))
+                        .toList(),
                   ),
-                ),
-
-                // Bottom Navigation
-                _buildBottomNav(),
-              ],
+                ],
+              ),
             ),
+          ),
+
+          // Bottom Navigation
+          _buildBottomNav(),
+        ],
+      ),
     );
   }
 
@@ -255,10 +269,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           border: isActive
               ? null
               : Border.all(
-                  color: Colors.grey.shade300,
-                  width: 1.5,
-                  style: BorderStyle.solid,
-                ),
+            color: Colors.grey.shade300,
+            width: 1.5,
+            style: BorderStyle.solid,
+          ),
           boxShadow: isActive
               ? [BoxShadow(color: kPrimary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
               : null,
